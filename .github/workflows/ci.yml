@@ -27,6 +27,7 @@ jobs:
     - name: Train model with MLflow Project
       run: |
         cd MLProject
+        rm -rf mlruns my_docker_build
         mlflow run . --env-manager=local
         
     - name: Get Run ID
