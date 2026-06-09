@@ -27,7 +27,7 @@ jobs:
     - name: Train model with MLflow Project
       run: |
         cd MLProject
-        mlflow run . --no-conda
+        mlflow run . --env-manager=local
         
     - name: Get Run ID
       id: get_run_id
