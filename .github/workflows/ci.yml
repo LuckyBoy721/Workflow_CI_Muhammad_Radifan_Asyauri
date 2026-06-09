@@ -1,0 +1,53 @@
+name: MLflow CI Workflow
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install mlflow==2.19.0 pandas scikit-learn
+
+    - name: Train model with MLflow Project
+      run: |
+        cd MLProject
+        mlflow run . --no-conda
+        
+    - name: Get Run ID
+      id: get_run_id
+      run: |
+        cd MLProject
+        # Assuming only one run is present for simplicity, getting the latest one
+        RUN_ID=$(ls mlruns/0 | grep -v meta.yaml | head -n 1)
+        echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+    - name: Build Docker Image
+      run: |
+        cd MLProject
+        mlflow models build-docker -m "runs:/${{ env.RUN_ID }}/model" -n ${{ secrets.DOCKER_HUB_USERNAME }}/titanic-model:latest
+
+    - name: Push Docker Image
+      run: |
+        docker push ${{ secrets.DOCKER_HUB_USERNAME }}/titanic-model:latest
