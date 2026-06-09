@@ -46,7 +46,10 @@ jobs:
     - name: Build Docker Image
       run: |
         cd MLProject
-        mlflow models build-docker -m "runs:/${{ env.RUN_ID }}/model" -n ${{ secrets.DOCKER_HUB_USERNAME }}/titanic-model:latest --env-manager conda
+        mlflow models generate-dockerfile -m "runs:/${{ env.RUN_ID }}/model" -d my_docker_build
+        sed -i 's/RUN apt install -y python/RUN apt-get update \&\& apt-get install -y software-properties-common \&\& add-apt-repository ppa:deadsnakes\/ppa -y \&\& apt-get update \&\& apt install -y python/g' my_docker_build/Dockerfile
+        cd my_docker_build
+        docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/titanic-model:latest .
 
     - name: Push Docker Image
       run: |
